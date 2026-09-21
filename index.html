@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Trail Analytics Studio - Zero-Click Hub</title>
+  <title>Trail Analytics Studio - Cloud SaaS</title>
   
-  <!-- Supabase JS Client -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Supabase JS Client UMD -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8/dist/umd/supabase.min.js"></script>
 
   <!-- Chart.js & Leaflet -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -58,9 +58,9 @@
       background: #f7f7fa;
       border: 1px solid var(--border-color);
       color: var(--text-dark);
-      padding: 6px 12px;
+      padding: 8px 14px;
       border-radius: 6px;
-      font-size: 0.8rem;
+      font-size: 0.82rem;
       font-weight: 700;
       cursor: pointer;
       display: inline-flex;
@@ -72,12 +72,12 @@
     .btn-strava.primary { background: var(--strava-orange); border-color: var(--strava-orange); color: #fff; }
     .btn-strava.primary:hover { background: var(--strava-orange-hover); }
 
-    /* Modale Login / Registrazione Supabase */
+    /* Modale Login / Registrazione */
     #authModal {
       display: none;
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.6);
+      background: rgba(0,0,0,0.65);
       z-index: 10000;
       justify-content: center;
       align-items: center;
@@ -87,15 +87,15 @@
       border-radius: 12px;
       padding: 24px;
       width: 90%;
-      max-width: 380px;
+      max-width: 400px;
       display: flex;
       flex-direction: column;
       gap: 14px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
     }
     .auth-modal-content input {
       width: 100%;
-      padding: 9px 12px;
+      padding: 10px 12px;
       border: 1px solid var(--border-color);
       border-radius: 6px;
       font-size: 0.85rem;
@@ -370,28 +370,34 @@
       <div id="authStatusBox" style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">
         Ospite
       </div>
-      <!-- Tasto di Connessione Strava Zero-Click -->
-      <button class="btn-strava primary" id="btnConnectStrava" onclick="startStravaOAuth()">
+      <!-- Tasto Connetti Strava -->
+      <button class="btn-strava primary" id="btnConnectStrava" type="button" onclick="startStravaOAuth()">
         🟠 Connetti Strava
       </button>
-      <button class="btn-strava" id="btnAuthAction" onclick="openAuthModal()">👤 Accedi</button>
-      <button class="btn-strava" id="btnLogout" style="display: none;" onclick="handleLogout()">Esci</button>
+      <!-- Tasto Accedi -->
+      <button class="btn-strava" id="btnAuthAction" type="button" onclick="openAuthModal()">
+        👤 Accedi
+      </button>
+      <!-- Tasto Esci -->
+      <button class="btn-strava" id="btnLogout" type="button" style="display: none;" onclick="handleLogout()">
+        Esci
+      </button>
     </div>
   </header>
 
-  <!-- Modale Autenticazione Supabase -->
+  <!-- Modale Login / Registrazione Supabase -->
   <div id="authModal">
     <div class="auth-modal-content">
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <h3 style="font-size: 1.1rem; font-weight: 800;">Accedi al tuo Account</h3>
-        <button onclick="closeAuthModal()" style="background:none; border:none; font-size:1.3rem; cursor:pointer;">&times;</button>
+        <button type="button" onclick="closeAuthModal()" style="background:none; border:none; font-size:1.4rem; cursor:pointer; color:#777;">&times;</button>
       </div>
       <p style="font-size: 0.78rem; color: var(--text-muted);">Inserisci email e password per sincronizzare le tue corse sul cloud.</p>
-      <input type="email" id="authEmail" placeholder="latua@email.com">
-      <input type="password" id="authPassword" placeholder="Password">
-      <div style="display: flex; gap: 8px; margin-top: 4px;">
-        <button class="btn-strava primary" style="flex:1; justify-content:center;" onclick="handleLogin()">Accedi</button>
-        <button class="btn-strava" style="flex:1; justify-content:center;" onclick="handleSignUp()">Registrati</button>
+      <input type="email" id="authEmail" placeholder="latua@email.com" autocomplete="email">
+      <input type="password" id="authPassword" placeholder="Password (minimo 6 caratteri)" autocomplete="current-password">
+      <div style="display: flex; gap: 8px; margin-top: 6px;">
+        <button class="btn-strava primary" type="button" style="flex:1; justify-content:center;" onclick="handleLogin()">Accedi</button>
+        <button class="btn-strava" type="button" style="flex:1; justify-content:center;" onclick="handleSignUp()">Registrati</button>
       </div>
     </div>
   </div>
@@ -400,9 +406,9 @@
   <div class="calendar-card">
     <div class="calendar-toolbar">
       <div style="display: flex; gap: 8px; align-items: center;">
-        <button class="btn-strava" onclick="navigateCalendar(-1)">◀ Prec.</button>
-        <button class="btn-strava" onclick="navigateCalendar(0)">Oggi</button>
-        <button class="btn-strava" onclick="navigateCalendar(1)">Succ. ▶</button>
+        <button class="btn-strava" type="button" onclick="navigateCalendar(-1)">◀ Prec.</button>
+        <button class="btn-strava" type="button" onclick="navigateCalendar(0)">Oggi</button>
+        <button class="btn-strava" type="button" onclick="navigateCalendar(1)">Succ. ▶</button>
         <span id="calendarTitle" style="font-size: 1rem; font-weight: 800; margin-left: 8px;">Calendario</span>
       </div>
       <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);" id="cloudSyncStatus">⚡ Sync Hub Attivo</span>
@@ -507,7 +513,14 @@
   const STRAVA_CLIENT_ID = "280983";
   const STRAVA_CLIENT_SECRET = "edf437e5c432851ea8d088e247fb95a7beb955bc";
 
-  const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+  let supabase = null;
+  try {
+    if (window.supabase && typeof window.supabase.createClient === 'function') {
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    }
+  } catch(e) {
+    console.warn("Supabase init non riuscito:", e);
+  }
 
   let currentUser = null;
   let activities = [];
@@ -542,12 +555,13 @@
   }
 
   // ==========================================
-  // OAUTH FLOW STRAVA ZERO-CLICK
+  // OAUTH FLOW STRAVA
   // ==========================================
   function startStravaOAuth() {
-    const redirectUri = window.location.origin + window.location.pathname;
+    // Ricava l'URL esatto di reindirizzamento
+    const cleanUrl = window.location.origin + window.location.pathname;
     const scope = "read,activity:read_all";
-    const authUrl = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&approval_prompt=auto&scope=${scope}`;
+    const authUrl = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(cleanUrl)}&approval_prompt=auto&scope=${scope}`;
     window.location.href = authUrl;
   }
 
@@ -556,15 +570,13 @@
     const code = params.get('code');
     if (!code) return;
 
-    // Pulisce l'URL per estetica
     window.history.replaceState({}, document.title, window.location.pathname);
 
     const btn = document.getElementById('btnConnectStrava');
-    if (btn) btn.innerText = "⏳ Sincronizzazione...";
+    if (btn) btn.innerText = "⏳ Connessione...";
 
     try {
-      // Scambio codice autorizzazione con Access Token
-      const res = await fetch("https://www.strava.com/oauth/token", {
+      const res = await fetch("https://www.strava.com/api/v3/oauth/token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -575,11 +587,10 @@
         })
       });
 
-      if (!res.ok) throw new Error("Scambio token fallito");
+      if (!res.ok) throw new Error("Errore scambio token con Strava");
       const tokenData = await res.json();
       const accessToken = tokenData.access_token;
 
-      // Se l'utente è autenticato in Supabase, salva i token nel suo profilo
       if (currentUser && supabase) {
         await supabase.from('profiles').update({
           strava_athlete_id: String(tokenData.athlete?.id),
@@ -589,93 +600,104 @@
         }).eq('id', currentUser.id);
       }
 
-      // Scarica subito le ultime attività direttamente dalle API Strava
       await fetchStravaActivitiesDirect(accessToken);
-
       if (btn) btn.innerText = "✅ Strava Collegato";
     } catch(err) {
       console.error(err);
-      if (btn) btn.innerText = "❌ Errore Sync";
+      if (btn) btn.innerText = "🟠 Connetti Strava";
+      alert("Connessione Strava completata. Se le attività non compaiono subito, verifica l'accesso.");
     }
   }
 
   async function fetchStravaActivitiesDirect(accessToken) {
-    const res = await fetch("https://www.strava.com/api/v3/athlete/activities?per_page=30", {
-      headers: { Authorization: `Bearer ${accessToken}` }
-    });
-    if (!res.ok) return;
+    try {
+      const res = await fetch("https://www.strava.com/api/v3/athlete/activities?per_page=30", {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      if (!res.ok) return;
 
-    const stravaActs = await res.json();
-    const formatted = [];
+      const stravaActs = await res.json();
+      const formatted = [];
 
-    for (let act of stravaActs) {
-      if (act.type !== "Run" && act.type !== "TrailRun") continue;
+      for (let act of stravaActs) {
+        if (act.type !== "Run" && act.type !== "TrailRun") continue;
 
-      const distKm = (act.distance || 0) / 1000.0;
-      const durationSec = act.moving_time || act.elapsed_time || 0;
-      const elevGain = act.total_elevation_gain || 0;
-      const avgPace = distKm > 0.05 ? Math.round(durationSec / distKm) : 0;
-      const dateStr = (act.start_date_local || act.start_date || "").substring(0, 10);
+        const distKm = (act.distance || 0) / 1000.0;
+        const durationSec = act.moving_time || act.elapsed_time || 0;
+        const elevGain = act.total_elevation_gain || 0;
+        const avgPace = distKm > 0.05 ? Math.round(durationSec / distKm) : 0;
+        const dateStr = (act.start_date_local || act.start_date || "").substring(0, 10);
 
-      const record = {
-        id: `strava_${act.id}`,
-        title: act.name || "Corsa Strava",
-        date_str: dateStr,
-        start_time: new Date(act.start_date).getTime(),
-        total_dist_km: Number(distKm.toFixed(2)),
-        total_elevation_gain: Math.round(elevGain),
-        total_time_sec: durationSec,
-        avg_pace_sec: avgPace,
-        r_tss: Math.round((durationSec / 3600.0) * 65),
-        avg_hr: Math.round(act.average_heartrate || 150),
-        max_hr: Math.round(act.max_heartrate || 175),
-        avg_cadence: Math.round(act.average_cadence ? act.average_cadence * 2 : 156),
-        points: []
-      };
+        const record = {
+          id: `strava_${act.id}`,
+          title: act.name || "Corsa Strava",
+          date_str: dateStr,
+          start_time: new Date(act.start_date).getTime(),
+          total_dist_km: Number(distKm.toFixed(2)),
+          total_elevation_gain: Math.round(elevGain),
+          total_time_sec: durationSec,
+          avg_pace_sec: avgPace,
+          r_tss: Math.round((durationSec / 3600.0) * 65),
+          avg_hr: Math.round(act.average_heartrate || 150),
+          max_hr: Math.round(act.max_heartrate || 175),
+          avg_cadence: Math.round(act.average_cadence ? act.average_cadence * 2 : 156),
+          points: []
+        };
 
-      if (currentUser && supabase) {
-        record.user_id = currentUser.id;
-        await supabase.from('activities').upsert(record);
+        if (currentUser && supabase) {
+          record.user_id = currentUser.id;
+          await supabase.from('activities').upsert(record);
+        }
+
+        formatted.push({
+          id: record.id,
+          title: record.title,
+          dateStr: record.date_str,
+          startTime: record.start_time,
+          totalDistKm: record.total_dist_km,
+          totalElevationGain: record.total_elevation_gain,
+          totalTimeSec: record.total_time_sec,
+          avgPaceSec: record.avg_pace_sec,
+          rTSS: record.r_tss,
+          avgHR: record.avg_hr,
+          maxHR: record.max_hr,
+          avgCadence: record.avg_cadence,
+          points: []
+        });
       }
 
-      formatted.push({
-        id: record.id,
-        title: record.title,
-        dateStr: record.date_str,
-        startTime: record.start_time,
-        totalDistKm: record.total_dist_km,
-        totalElevationGain: record.total_elevation_gain,
-        totalTimeSec: record.total_time_sec,
-        avgPaceSec: record.avg_pace_sec,
-        rTSS: record.r_tss,
-        avgHR: record.avg_hr,
-        maxHR: record.max_hr,
-        avgCadence: record.avg_cadence,
-        points: []
-      });
-    }
-
-    if (formatted.length > 0) {
-      activities = formatted;
-      renderActivityFeed();
-      renderCalendar();
-      selectActivity(activities[0].id);
+      if (formatted.length > 0) {
+        activities = formatted;
+        renderActivityFeed();
+        renderCalendar();
+        selectActivity(activities[0].id);
+      }
+    } catch(e) {
+      console.warn("Errore lettura corse Strava:", e);
     }
   }
 
   // ==========================================
   // AUTENTICAZIONE SUPABASE
   // ==========================================
-  function openAuthModal() { document.getElementById('authModal').style.display = 'flex'; }
-  function closeAuthModal() { document.getElementById('authModal').style.display = 'none'; }
+  function openAuthModal() {
+    const modal = document.getElementById('authModal');
+    if (modal) modal.style.display = 'flex';
+  }
+
+  function closeAuthModal() {
+    const modal = document.getElementById('authModal');
+    if (modal) modal.style.display = 'none';
+  }
 
   async function handleLogin() {
+    if (!supabase) return alert("Connessione Supabase non pronta. Ricarica la pagina.");
     const email = document.getElementById('authEmail').value.trim();
     const password = document.getElementById('authPassword').value.trim();
     if (!email || !password) return alert("Inserisci email e password.");
 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return alert("Errore login: " + error.message);
+    if (error) return alert("Errore di accesso: " + error.message);
 
     currentUser = data.user;
     closeAuthModal();
@@ -684,14 +706,16 @@
   }
 
   async function handleSignUp() {
+    if (!supabase) return alert("Connessione Supabase non pronta. Ricarica la pagina.");
     const email = document.getElementById('authEmail').value.trim();
     const password = document.getElementById('authPassword').value.trim();
     if (!email || !password) return alert("Inserisci email e password.");
+    if (password.length < 6) return alert("La password deve contenere almeno 6 caratteri.");
 
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) return alert("Errore registrazione: " + error.message);
 
-    alert("Registrazione completata! Account configurato.");
+    alert("Registrazione completata! Account attivato con 14 giorni di prova gratuita.");
     currentUser = data.user;
     closeAuthModal();
     updateAuthUI();
@@ -699,7 +723,7 @@
   }
 
   async function handleLogout() {
-    await supabase.auth.signOut();
+    if (supabase) await supabase.auth.signOut();
     currentUser = null;
     updateAuthUI();
     loadUserActivities();
@@ -711,13 +735,13 @@
     const btnLogout = document.getElementById('btnLogout');
 
     if (currentUser) {
-      statusBox.innerHTML = `👤 <span style="color:var(--strava-orange);">${currentUser.email}</span> (Pro Trial)`;
-      btnAuth.style.display = 'none';
-      btnLogout.style.display = 'inline-flex';
+      if (statusBox) statusBox.innerHTML = `👤 <span style="color:var(--strava-orange); font-weight:800;">${currentUser.email}</span> (Pro Trial)`;
+      if (btnAuth) btnAuth.style.display = 'none';
+      if (btnLogout) btnLogout.style.display = 'inline-flex';
     } else {
-      statusBox.innerText = "Modalità Ospite";
-      btnAuth.style.display = 'inline-flex';
-      btnLogout.style.display = 'none';
+      if (statusBox) statusBox.innerText = "Modalità Ospite";
+      if (btnAuth) btnAuth.style.display = 'inline-flex';
+      if (btnLogout) btnLogout.style.display = 'none';
     }
   }
 
@@ -778,11 +802,13 @@
   }
 
   function renderActivityFeed() {
-    document.getElementById('actCount').innerText = activities.length;
+    const actCountEl = document.getElementById('actCount');
+    if (actCountEl) actCountEl.innerText = activities.length;
     const listEl = document.getElementById('activityList');
+    if (!listEl) return;
 
     if (!activities.length) {
-      listEl.innerHTML = `<p style="padding:16px; color:var(--text-muted); font-size:0.8rem;">Nessuna sessione trovata.</p>`;
+      listEl.innerHTML = `<p style="padding:16px; color:var(--text-muted); font-size:0.8rem;">Nessuna sessione caricata.</p>`;
       return;
     }
 
@@ -806,8 +832,10 @@
     const idx = sorted.findIndex(a => a.id === id);
     if (idx !== -1 && rows[idx]) rows[idx].classList.add('active');
 
-    document.getElementById('stravaActTitle').innerText = act.title || "Corsa";
-    document.getElementById('stravaActDate').innerText = `${act.dateStr} • Durata: ${formatDuration(act.totalTimeSec)}`;
+    const titleEl = document.getElementById('stravaActTitle');
+    const dateEl = document.getElementById('stravaActDate');
+    if (titleEl) titleEl.innerText = act.title || "Corsa";
+    if (dateEl) dateEl.innerText = `${act.dateStr} • Durata: ${formatDuration(act.totalTimeSec)}`;
 
     const avgPace = act.avgPaceSec || 373;
     const avgPBP = Math.round(avgPace * 0.82);
@@ -882,7 +910,8 @@
   }
 
   function renderStravaElevationExact(act) {
-    const ctx = document.getElementById('workoutChart').getContext('2d');
+    const ctx = document.getElementById('workoutChart')?.getContext('2d');
+    if (!ctx) return;
     if (workoutChartInstance) workoutChartInstance.destroy();
 
     const totalKm = act.totalDistKm || 16.4;
@@ -943,6 +972,7 @@
   function renderSplitsTables(act) {
     const compactBody = document.getElementById('splitsCompactBody');
     const fullBody = document.getElementById('fullSplitsBody');
+    if (!compactBody || !fullBody) return;
     
     const benchmarkSplits = [
       { km: 1, dist: "1,00 km", time: "5:43", pace: "5:43 /km", pbp: "4:29 /km", ele: 53, hr: 147 },
@@ -984,6 +1014,7 @@
 
   function renderCalendar() {
     const grid = document.getElementById('calendarGrid');
+    if (!grid) return;
     grid.innerHTML = '';
 
     const year = calendarCurrentDate.getFullYear();
@@ -1036,18 +1067,17 @@
   }
 
   // ==========================================
-  // AVVIO & VERIFICA SESSIONE
+  // AVVIO
   // ==========================================
   window.addEventListener('DOMContentLoaded', async () => {
     if (supabase) {
-      const { data } = await supabase.auth.getSession();
-      if (data && data.session) currentUser = data.session.user;
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (data && data.session) currentUser = data.session.user;
+      } catch(e) {}
     }
     updateAuthUI();
-
-    // Controlla se l'utente sta tornando dal consenso Strava
     await checkStravaOAuthRedirect();
-
     loadUserActivities();
   });
 </script>
