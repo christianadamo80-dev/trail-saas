@@ -5,12 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Trail Analytics Studio - Cloud SaaS</title>
   
-  <!-- Leaflet & Chart.js -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <!-- Supabase JS Client protetto -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
   <style>
@@ -40,8 +37,6 @@
       flex-wrap: wrap;
       gap: 10px;
       border: 1px solid var(--border-color);
-      position: relative;
-      z-index: 10;
     }
     .brand { display: flex; align-items: center; gap: 10px; }
     .logo-strava {
@@ -67,7 +62,6 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      user-select: none;
       transition: all 0.15s;
     }
     .btn-strava:hover { background: #ededf2; }
@@ -76,7 +70,7 @@
     .btn-strava.danger { background: #fee2e2; border-color: #fca5a5; color: #b91c1c; }
     .btn-strava.danger:hover { background: #fecaca; }
 
-    /* Modale Login Isolato */
+    /* Modale Login */
     #authModal {
       display: none;
       position: fixed;
@@ -183,8 +177,6 @@
       font-weight: 800;
       font-size: 0.88rem;
       border-bottom: 1px solid var(--border-color);
-      display: flex;
-      justify-content: space-between;
     }
     .feed-items { overflow-y: auto; flex: 1; }
     .feed-row {
@@ -236,29 +228,28 @@
         Ospite
       </div>
 
-      <!-- Tasto Connetti Strava (mostrato se disconnesso) -->
+      <!-- Tasto Connetti -->
       <button class="btn-strava primary" id="btnConnectStrava" type="button">
         🟠 Connetti Strava
       </button>
 
-      <!-- Tasto Disconnetti Strava (mostrato se connesso) -->
-      <button class="btn-strava danger" id="btnDisconnectStrava" type="button" style="display: none;">
+      <!-- Tasto Disconnetti SEMPRE PRESENTE -->
+      <button class="btn-strava danger" id="btnDisconnectStrava" type="button">
         ✕ Disconnetti Strava
       </button>
 
-      <!-- Tasto Accedi / Registrati -->
+      <!-- Tasto Accedi -->
       <button class="btn-strava" id="btnAuthAction" type="button">
         👤 Accedi
       </button>
 
-      <!-- Tasto Esci Account -->
       <button class="btn-strava" id="btnLogout" type="button" style="display: none;">
         Esci
       </button>
     </div>
   </header>
 
-  <!-- Finestra Autenticazione Supabase -->
+  <!-- Modale Login -->
   <div id="authModal">
     <div class="auth-modal-content">
       <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -284,7 +275,7 @@
         <button class="btn-strava" id="btnCalNext" type="button">Succ. ▶</button>
         <span id="calendarTitle" style="font-size: 1rem; font-weight: 800; margin-left: 8px;">Calendario</span>
       </div>
-      <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);" id="cloudSyncStatus">⚡ Cloud Ready</span>
+      <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);" id="cloudSyncStatus">⚡ Pronto</span>
     </div>
     <div class="calendar-grid-header">
       <div>LUN</div><div>MAR</div><div>MER</div><div>GIO</div><div>VEN</div><div>SAB</div><div>DOM</div>
@@ -341,88 +332,42 @@
       supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     }
   } catch(e) {
-    console.warn("Supabase init non riuscito:", e);
+    console.warn("Supabase warning:", e);
   }
 
-  // ==========================================
-  // GESTIONE CONNESSIONE E DISCONNESSIONE STRAVA
-  // ==========================================
-  
-  // 1. Connessione: forza Strava a mostrare sempre la schermata di selezione / approvazione
+  // Connessione Strava con approvazione forzata
   document.getElementById('btnConnectStrava').addEventListener('click', () => {
     const cleanUrl = window.location.origin + window.location.pathname;
-    // approval_prompt=force OBBLIGA Strava a far scegliere l'account e confermare i permessi
     const scope = "read,activity:read_all";
     window.location.href = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(cleanUrl)}&approval_prompt=force&scope=${scope}`;
   });
 
-  // 2. Disconnessione: scollega e cancella i token dal database e dal browser
+  // Disconnessione Strava completa
   document.getElementById('btnDisconnectStrava').addEventListener('click', async () => {
-    if (!confirm("Vuoi davvero scollegare il tuo account Strava?")) return;
+    if (!confirm("Vuoi scollegare Strava e rimuovere le sessioni attuali per ricollegarti da capo?")) return;
 
-    const btn = document.getElementById('btnDisconnectStrava');
-    btn.innerText = "⏳ Scollegamento...";
+    localStorage.removeItem('strava_token');
+    localStorage.removeItem('strava_activities');
 
-    try {
-      // Se l'utente ha un token salvato, tenta la revoca ufficiale verso le API Strava
-      const savedToken = localStorage.getItem('strava_access_token');
-      if (savedToken) {
-        try {
-          await fetch(`https://www.strava.com/oauth/deauthorize?access_token=${savedToken}`, { method: 'POST' });
-        } catch(e) {}
-      }
+    if (currentUser && supabaseClient) {
+      await supabaseClient.from('profiles').update({
+        strava_athlete_id: null,
+        strava_access_token: null,
+        strava_refresh_token: null,
+        strava_token_expires_at: null
+      }).eq('id', currentUser.id);
 
-      // Rimuove i dati dal profilo Supabase
-      if (currentUser && supabaseClient) {
-        await supabaseClient.from('profiles').update({
-          strava_athlete_id: null,
-          strava_access_token: null,
-          strava_refresh_token: null,
-          strava_token_expires_at: null
-        }).eq('id', currentUser.id);
-
-        // Opzionale: pulisce anche le attività dell'utente dal database per ripartire puliti
-        await supabaseClient.from('activities').delete().eq('user_id', currentUser.id);
-      }
-
-      localStorage.removeItem('strava_access_token');
-      localStorage.removeItem('strava_athlete_id');
-      activities = [];
-
-      updateStravaStatusUI(false);
-      drawFeed();
-      drawCalendar();
-
-      alert("Account Strava scollegato con successo.");
-    } catch(err) {
-      console.error(err);
-      alert("Errore durante la disconnessione: " + err.message);
-    } finally {
-      btn.innerText = "✕ Disconnetti Strava";
+      await supabaseClient.from('activities').delete().eq('user_id', currentUser.id);
     }
+
+    activities = [];
+    drawFeed();
+    drawCalendar();
+    document.getElementById('cloudSyncStatus').innerText = "Disconnesso da Strava";
+    alert("Sessione Strava azzerata. Ora premi 'Connetti Strava' per rifare l'accesso selezionando tutte le caselle di permesso!");
   });
 
-  function updateStravaStatusUI(isConnected, athleteInfo = "") {
-    const btnConnect = document.getElementById('btnConnectStrava');
-    const btnDisconnect = document.getElementById('btnDisconnectStrava');
-    const cloudStatus = document.getElementById('cloudSyncStatus');
-
-    if (isConnected) {
-      btnConnect.style.display = 'none';
-      btnDisconnect.style.display = 'inline-flex';
-      cloudStatus.innerHTML = `🟢 Strava Connesso ${athleteInfo ? '(' + athleteInfo + ')' : ''}`;
-      cloudStatus.style.color = "#059669";
-    } else {
-      btnConnect.style.display = 'inline-flex';
-      btnDisconnect.style.display = 'none';
-      cloudStatus.innerHTML = `⚡ In attesa di connessione`;
-      cloudStatus.style.color = "var(--text-muted)";
-    }
-  }
-
-  // ==========================================
-  // INTERCETTAZIONE REDIRECT OAUTH DA STRAVA
-  // ==========================================
+  // Intercettazione codice di ritorno da Strava
   async function checkStravaOAuthRedirect() {
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
@@ -431,13 +376,8 @@
 
     window.history.replaceState({}, document.title, window.location.pathname);
 
-    // Notifica se l'utente non ha concesso il permesso completo alle attività
-    if (!scope.includes("activity:read_all")) {
-      alert("Attenzione: nella schermata Strava non hai spuntato la casella per visualizzare tutte le attività. Alcune corse potrebbero non apparire.");
-    }
-
     const btn = document.getElementById('btnConnectStrava');
-    if (btn) btn.innerText = "⏳ Ingestione corse...";
+    btn.innerText = "⏳ Ingestione corse...";
 
     try {
       const response = await fetch(`${SUPABASE_URL}/functions/v1/strava-sync`, {
@@ -454,33 +394,29 @@
 
       const resData = await response.json();
       if (!response.ok || resData.error) {
-        throw new Error(resData.error || "Errore durante la sincronizzazione con Strava");
+        throw new Error(resData.error || "Errore durante la sincronizzazione");
       }
 
-      updateStravaStatusUI(true);
+      alert(`Sincronizzazione completata! Sono state importate ${resData.count || 0} attività.`);
       await loadActivities();
-      alert(`Sincronizzazione riuscita! Sono state importate ${resData.count || 0} attività.`);
     } catch(err) {
       console.error(err);
-      alert("Errore nella sincronizzazione Strava: " + err.message);
+      alert("Errore nella sincronizzazione: " + err.message);
     } finally {
-      if (btn) btn.innerText = "🟠 Connetti Strava";
+      btn.innerText = "🟠 Connetti Strava";
     }
   }
 
-  // ==========================================
-  // AUTENTICAZIONE SUPABASE
-  // ==========================================
+  // Gestione Login / Logout Supabase
   document.getElementById('btnAuthAction').addEventListener('click', () => {
     document.getElementById('authModal').style.display = 'flex';
   });
-
   document.getElementById('btnCloseAuth').addEventListener('click', () => {
     document.getElementById('authModal').style.display = 'none';
   });
 
   document.getElementById('btnSubLogin').addEventListener('click', async () => {
-    if (!supabaseClient) return alert("Database Supabase non connesso.");
+    if (!supabaseClient) return alert("Database non pronto.");
     const email = document.getElementById('authEmail').value.trim();
     const password = document.getElementById('authPassword').value.trim();
     if (!email || !password) return alert("Inserisci email e password.");
@@ -491,21 +427,19 @@
     currentUser = data.user;
     document.getElementById('authModal').style.display = 'none';
     refreshAuthUI();
-    checkExistingStravaLink();
     loadActivities();
   });
 
   document.getElementById('btnSubSignUp').addEventListener('click', async () => {
-    if (!supabaseClient) return alert("Database Supabase non connesso.");
+    if (!supabaseClient) return alert("Database non pronto.");
     const email = document.getElementById('authEmail').value.trim();
     const password = document.getElementById('authPassword').value.trim();
     if (!email || !password) return alert("Inserisci email e password.");
-    if (password.length < 6) return alert("La password deve contenere almeno 6 caratteri.");
 
     const { data, error } = await supabaseClient.auth.signUp({ email, password });
     if (error) return alert("Errore registrazione: " + error.message);
 
-    alert("Registrazione completata con successo!");
+    alert("Registrazione effettuata con successo!");
     currentUser = data.user;
     document.getElementById('authModal').style.display = 'none';
     refreshAuthUI();
@@ -516,7 +450,6 @@
     if (supabaseClient) await supabaseClient.auth.signOut();
     currentUser = null;
     refreshAuthUI();
-    updateStravaStatusUI(false);
     loadActivities();
   });
 
@@ -536,27 +469,7 @@
     }
   }
 
-  // Verifica se l'utente ha già Strava collegato nel suo profilo Supabase
-  async function checkExistingStravaLink() {
-    if (!currentUser || !supabaseClient) return;
-    try {
-      const { data } = await supabaseClient
-        .from('profiles')
-        .select('strava_athlete_id, strava_access_token')
-        .eq('id', currentUser.id)
-        .single();
-
-      if (data && data.strava_access_token) {
-        updateStravaStatusUI(true, `ID: ${data.strava_athlete_id || ''}`);
-      } else {
-        updateStravaStatusUI(false);
-      }
-    } catch(e) {}
-  }
-
-  // ==========================================
-  // CARICAMENTO & VISUALIZZAZIONE ATTIVITÀ
-  // ==========================================
+  // Caricamento attività
   async function loadActivities() {
     let list = [];
     if (currentUser && supabaseClient) {
@@ -581,6 +494,14 @@
       } catch(e) {}
     }
 
+    // Se non loggato, prova a leggere dal file locale
+    if (!list.length) {
+      try {
+        const res = await fetch('activities.json?t=' + Date.now());
+        if (res.ok) list = await res.json();
+      } catch(e) {}
+    }
+
     activities = list;
     drawFeed();
     drawCalendar();
@@ -588,8 +509,8 @@
     if (activities.length > 0) {
       selectWorkout(activities[0].id);
     } else {
-      document.getElementById('stravaActTitle').innerText = "Nessuna attività collegata";
-      document.getElementById('stravaActDate').innerText = "Connetti Strava per caricare le tue uscite";
+      document.getElementById('stravaActTitle').innerText = "Nessuna corsa presente";
+      document.getElementById('stravaActDate').innerText = "Premi 'Connetti Strava' per importare le tue uscite reali";
     }
   }
 
@@ -598,7 +519,7 @@
     const feed = document.getElementById('activityList');
 
     if (!activities.length) {
-      feed.innerHTML = `<p style="padding:14px; font-size:0.8rem; color:var(--text-muted);">Nessuna corsa trovata. Premi "Connetti Strava" per importarle.</p>`;
+      feed.innerHTML = `<p style="padding:16px; font-size:0.8rem; color:var(--text-muted);">Nessuna corsa caricata. Clicca su 'Connetti Strava'.</p>`;
       return;
     }
 
@@ -681,7 +602,7 @@
     });
   }
 
-  // Calendario
+  // Navigazione Calendario
   document.getElementById('btnCalPrev').addEventListener('click', () => { curCalDate.setMonth(curCalDate.getMonth() - 1); drawCalendar(); });
   document.getElementById('btnCalNext').addEventListener('click', () => { curCalDate.setMonth(curCalDate.getMonth() + 1); drawCalendar(); });
   document.getElementById('btnCalToday').addEventListener('click', () => { curCalDate = new Date(); drawCalendar(); });
@@ -721,7 +642,7 @@
     }
   }
 
-  // Inizializzazione
+  // Inizializzazione pagina
   window.addEventListener('DOMContentLoaded', async () => {
     if (supabaseClient) {
       try {
@@ -730,7 +651,6 @@
       } catch(e) {}
     }
     refreshAuthUI();
-    await checkExistingStravaLink();
     await checkStravaOAuthRedirect();
     loadActivities();
   });
