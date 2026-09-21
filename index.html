@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Trail Analytics Studio - Cloud SaaS</title>
   
-  <!-- Supabase JS Client UMD -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8/dist/umd/supabase.min.js"></script>
-
-  <!-- Chart.js & Leaflet -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Leaflet & Chart.js -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Supabase JS Client protetto -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
   <style>
     :root {
@@ -29,7 +29,6 @@
     body { background-color: var(--bg-page); color: var(--text-dark); padding: 16px; }
     .container { max-width: 1440px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
 
-    /* Header Nav */
     header {
       background: var(--card-bg);
       border-radius: 8px;
@@ -41,6 +40,8 @@
       flex-wrap: wrap;
       gap: 10px;
       border: 1px solid var(--border-color);
+      position: relative;
+      z-index: 10;
     }
     .brand { display: flex; align-items: center; gap: 10px; }
     .logo-strava {
@@ -66,42 +67,42 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      transition: all 0.15s;
+      user-select: none;
     }
     .btn-strava:hover { background: #ededf2; }
     .btn-strava.primary { background: var(--strava-orange); border-color: var(--strava-orange); color: #fff; }
     .btn-strava.primary:hover { background: var(--strava-orange-hover); }
 
-    /* Modale Login / Registrazione */
+    /* Modale Login Isolato */
     #authModal {
       display: none;
       position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.65);
-      z-index: 10000;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.7);
+      z-index: 99999;
       justify-content: center;
       align-items: center;
     }
     .auth-modal-content {
-      background: var(--card-bg);
+      background: #ffffff;
       border-radius: 12px;
       padding: 24px;
       width: 90%;
-      max-width: 400px;
+      max-width: 380px;
       display: flex;
       flex-direction: column;
       gap: 14px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
     }
     .auth-modal-content input {
       width: 100%;
-      padding: 10px 12px;
+      padding: 10px;
       border: 1px solid var(--border-color);
       border-radius: 6px;
       font-size: 0.85rem;
     }
 
-    /* Calendario Training Log */
+    /* Calendario */
     .calendar-card {
       background: var(--card-bg);
       border: 1px solid var(--border-color);
@@ -138,14 +139,12 @@
       background: #ffffff;
       border: 1px solid var(--border-color);
       border-radius: 6px;
-      min-height: 85px;
+      min-height: 80px;
       padding: 6px;
       display: flex;
       flex-direction: column;
       gap: 4px;
-      cursor: pointer;
     }
-    .cal-cell:hover { border-color: var(--strava-orange); }
     .cal-cell.today { border: 2px solid var(--strava-orange); background: #fffbf9; }
     .cal-cell.different-month { background: #fafafa; opacity: 0.4; }
     .cal-cell-head {
@@ -156,37 +155,8 @@
       font-weight: 800;
       color: var(--text-muted);
     }
-    .cal-activity-pill {
-      background: #fff2eb;
-      border: 1px solid #ffd8c7;
-      border-left: 3px solid var(--strava-orange);
-      border-radius: 4px;
-      padding: 4px 6px;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      font-size: 0.7rem;
-    }
-    .cal-act-row1 {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-weight: 800;
-      color: #111;
-    }
-    .cal-act-km { color: var(--strava-orange); }
-    .cal-act-tss {
-      background: #ffffff;
-      border: 1px solid #fed1be;
-      border-radius: 3px;
-      padding: 1px 4px;
-      font-size: 0.65rem;
-      color: #666;
-      font-weight: 700;
-    }
-    .cal-act-ele { color: var(--text-muted); font-size: 0.64rem; font-weight: 600; }
 
-    /* Layout Principale a 2 Colonne */
+    /* Layout Principale */
     .main-grid {
       display: grid;
       grid-template-columns: 1fr;
@@ -202,7 +172,7 @@
       border-radius: 8px;
       display: flex;
       flex-direction: column;
-      max-height: 880px;
+      max-height: 850px;
       overflow: hidden;
     }
     .feed-header {
@@ -210,8 +180,6 @@
       font-weight: 800;
       font-size: 0.88rem;
       border-bottom: 1px solid var(--border-color);
-      display: flex;
-      justify-content: space-between;
     }
     .feed-items { overflow-y: auto; flex: 1; }
     .feed-row {
@@ -221,11 +189,7 @@
     }
     .feed-row:hover { background: #fafafa; }
     .feed-row.active { background: #fff5f0; border-left: 4px solid var(--strava-orange); }
-    .feed-row .date { font-size: 0.7rem; color: var(--text-muted); font-weight: 700; }
-    .feed-row .title { font-size: 0.86rem; font-weight: 800; color: #111; margin: 2px 0; }
-    .feed-row .stats { font-size: 0.76rem; color: var(--text-muted); }
 
-    /* Scheda Attività */
     .strava-activity-view {
       background: var(--card-bg);
       border: 1px solid var(--border-color);
@@ -234,130 +198,26 @@
       display: flex;
       flex-direction: column;
       gap: 16px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-    }
-    .strava-top-block {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 16px;
-    }
-    @media (min-width: 900px) {
-      .strava-top-block { grid-template-columns: 300px 1fr; }
-    }
-
-    .splits-compact-box {
-      border: 1px solid var(--border-color);
-      border-radius: 6px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      height: 400px;
-    }
-    .splits-compact-title {
-      padding: 10px 12px;
-      font-size: 0.9rem;
-      font-weight: 800;
-      border-bottom: 1px solid var(--border-color);
-      background: #fafafa;
-    }
-    .splits-table-wrap { overflow-y: auto; flex: 1; }
-    .splits-compact-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.8rem;
-    }
-    .splits-compact-table th {
-      text-align: left;
-      padding: 7px 8px;
-      color: var(--text-muted);
-      border-bottom: 1px solid var(--border-color);
-      font-size: 0.7rem;
-      font-weight: 800;
-      background: #fafafa;
-      position: sticky;
-      top: 0;
-      z-index: 2;
-    }
-    .splits-compact-table td {
-      padding: 7px 8px;
-      border-bottom: 1px solid var(--border-subtle);
-      font-weight: 700;
     }
 
     .map-wrapper {
       border: 1px solid var(--border-color);
       border-radius: 6px;
       overflow: hidden;
-      height: 400px;
-      position: relative;
+      height: 380px;
     }
-    #map { height: 100%; width: 100%; z-index: 1; }
+    #map { height: 100%; width: 100%; }
 
-    .strava-elevation-box {
-      border: 1px solid var(--border-color);
-      border-radius: 6px;
-      padding: 14px 18px 10px 18px;
-      background: #ffffff;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
     .elevation-canvas-container {
       position: relative;
-      height: 220px;
+      height: 200px;
       width: 100%;
-    }
-
-    .strava-bottom-switches {
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      padding-top: 14px;
-      border-top: 1px solid var(--border-color);
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-    .switch-metric-unit {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 3px;
-    }
-    .switch-lbl { font-size: 0.74rem; color: var(--text-muted); font-weight: 700; }
-    .switch-val { font-size: 1.05rem; font-weight: 900; color: #1f1f23; margin-top: 2px; }
-
-    .full-splits-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 16px;
-      margin-top: 8px;
-    }
-    .full-splits-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.82rem;
-    }
-    .full-splits-table th {
-      text-align: left;
-      padding: 8px 10px;
-      color: var(--text-muted);
-      border-bottom: 2px solid var(--border-color);
-      font-size: 0.72rem;
-      font-weight: 800;
-      text-transform: uppercase;
-    }
-    .full-splits-table td {
-      padding: 8px 10px;
-      border-bottom: 1px solid var(--border-subtle);
-      font-weight: 700;
     }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <!-- Header -->
   <header>
     <div class="brand">
       <div class="logo-strava">PRO</div>
@@ -366,52 +226,51 @@
       </div>
     </div>
 
-    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+    <div style="display: flex; gap: 10px; align-items: center;">
       <div id="authStatusBox" style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">
         Ospite
       </div>
-      <!-- Tasto Connetti Strava -->
-      <button class="btn-strava primary" id="btnConnectStrava" type="button" onclick="startStravaOAuth()">
+      <!-- Pulsante Strava -->
+      <button class="btn-strava primary" id="btnConnectStrava" type="button">
         🟠 Connetti Strava
       </button>
-      <!-- Tasto Accedi -->
-      <button class="btn-strava" id="btnAuthAction" type="button" onclick="openAuthModal()">
+      <!-- Pulsante Accedi -->
+      <button class="btn-strava" id="btnAuthAction" type="button">
         👤 Accedi
       </button>
-      <!-- Tasto Esci -->
-      <button class="btn-strava" id="btnLogout" type="button" style="display: none;" onclick="handleLogout()">
+      <!-- Pulsante Esci -->
+      <button class="btn-strava" id="btnLogout" type="button" style="display: none;">
         Esci
       </button>
     </div>
   </header>
 
-  <!-- Modale Login / Registrazione Supabase -->
+  <!-- Finestra di Autenticazione -->
   <div id="authModal">
     <div class="auth-modal-content">
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <h3 style="font-size: 1.1rem; font-weight: 800;">Accedi al tuo Account</h3>
-        <button type="button" onclick="closeAuthModal()" style="background:none; border:none; font-size:1.4rem; cursor:pointer; color:#777;">&times;</button>
+        <button id="btnCloseAuth" type="button" style="background:none; border:none; font-size:1.4rem; cursor:pointer;">&times;</button>
       </div>
-      <p style="font-size: 0.78rem; color: var(--text-muted);">Inserisci email e password per sincronizzare le tue corse sul cloud.</p>
-      <input type="email" id="authEmail" placeholder="latua@email.com" autocomplete="email">
-      <input type="password" id="authPassword" placeholder="Password (minimo 6 caratteri)" autocomplete="current-password">
+      <p style="font-size: 0.78rem; color: var(--text-muted);">Inserisci email e password per salvare i tuoi allenamenti sul cloud.</p>
+      <input type="email" id="authEmail" placeholder="latua@email.com">
+      <input type="password" id="authPassword" placeholder="Password (minimo 6 caratteri)">
       <div style="display: flex; gap: 8px; margin-top: 6px;">
-        <button class="btn-strava primary" type="button" style="flex:1; justify-content:center;" onclick="handleLogin()">Accedi</button>
-        <button class="btn-strava" type="button" style="flex:1; justify-content:center;" onclick="handleSignUp()">Registrati</button>
+        <button class="btn-strava primary" id="btnSubLogin" type="button" style="flex:1; justify-content:center;">Accedi</button>
+        <button class="btn-strava" id="btnSubSignUp" type="button" style="flex:1; justify-content:center;">Registrati</button>
       </div>
     </div>
   </div>
 
-  <!-- CALENDARIO ORDINATO -->
+  <!-- Calendario -->
   <div class="calendar-card">
     <div class="calendar-toolbar">
       <div style="display: flex; gap: 8px; align-items: center;">
-        <button class="btn-strava" type="button" onclick="navigateCalendar(-1)">◀ Prec.</button>
-        <button class="btn-strava" type="button" onclick="navigateCalendar(0)">Oggi</button>
-        <button class="btn-strava" type="button" onclick="navigateCalendar(1)">Succ. ▶</button>
+        <button class="btn-strava" id="btnCalPrev" type="button">◀ Prec.</button>
+        <button class="btn-strava" id="btnCalToday" type="button">Oggi</button>
+        <button class="btn-strava" id="btnCalNext" type="button">Succ. ▶</button>
         <span id="calendarTitle" style="font-size: 1rem; font-weight: 800; margin-left: 8px;">Calendario</span>
       </div>
-      <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);" id="cloudSyncStatus">⚡ Sync Hub Attivo</span>
     </div>
     <div class="calendar-grid-header">
       <div>LUN</div><div>MAR</div><div>MER</div><div>GIO</div><div>VEN</div><div>SAB</div><div>DOM</div>
@@ -419,85 +278,29 @@
     <div class="calendar-grid" id="calendarGrid"></div>
   </div>
 
-  <!-- Layout Principale -->
+  <!-- Vista Principale -->
   <div class="main-grid">
     <div class="feed-card">
       <div class="feed-header">
-        <span>Le tue corse (<span id="actCount">0</span>)</span>
+        <span>Attività Caricate (<span id="actCount">0</span>)</span>
       </div>
       <div class="feed-items" id="activityList"></div>
     </div>
 
     <div class="strava-activity-view">
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
-        <div>
-          <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 700;" id="stravaActDate">--</div>
-          <div style="font-size: 1.45rem; font-weight: 900; color: #111; letter-spacing: -0.02em;" id="stravaActTitle">Seleziona una sessione</div>
-        </div>
+      <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+        <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 700;" id="stravaActDate">--</div>
+        <div style="font-size: 1.45rem; font-weight: 900; color: #111;" id="stravaActTitle">Seleziona una corsa</div>
       </div>
 
-      <div class="strava-top-block">
-        <div class="splits-compact-box">
-          <div class="splits-compact-title">Intertempi</div>
-          <div class="splits-table-wrap">
-            <table class="splits-compact-table">
-              <thead><tr><th>KM</th><th>Passo</th><th>PBP</th><th>Dislivello</th></tr></thead>
-              <tbody id="splitsCompactBody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="map-wrapper">
-          <div id="map"></div>
-        </div>
+      <div class="map-wrapper">
+        <div id="map"></div>
       </div>
 
-      <div class="strava-elevation-box">
-        <div style="display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: 800; color: #444; margin-bottom: 4px;">
-          <span>Profilo Altitudine</span>
-          <span id="lblEleGain">D+ -- m</span>
-        </div>
+      <div style="border: 1px solid var(--border-color); border-radius: 6px; padding: 14px; background: #fff;">
+        <div style="font-size: 0.85rem; font-weight: 800; margin-bottom: 8px;" id="lblEleGain">Profilo Quota</div>
         <div class="elevation-canvas-container">
           <canvas id="workoutChart"></canvas>
-        </div>
-      </div>
-
-      <div class="strava-bottom-switches">
-        <div class="switch-metric-unit">
-          <span class="switch-lbl">Passo Medio</span>
-          <span class="switch-val" id="valAvgPace">--</span>
-        </div>
-        <div class="switch-metric-unit">
-          <span class="switch-lbl">Passo PBP (GAP)</span>
-          <span class="switch-val" id="valAvgPBP">--</span>
-        </div>
-        <div class="switch-metric-unit">
-          <span class="switch-lbl">FC Media</span>
-          <span class="switch-val" id="valAvgHR">--</span>
-        </div>
-        <div class="switch-metric-unit">
-          <span class="switch-lbl">Cadenza</span>
-          <span class="switch-val" id="valAvgCadence">--</span>
-        </div>
-        <div class="switch-metric-unit">
-          <span class="switch-lbl">Distanza</span>
-          <span class="switch-val" id="valTotalDist">--</span>
-        </div>
-        <div class="switch-metric-unit">
-          <span class="switch-lbl">Dislivello</span>
-          <span class="switch-val" id="valTotalElev" style="color: var(--strava-orange);">--</span>
-        </div>
-      </div>
-
-      <div class="full-splits-card">
-        <div style="font-size: 0.88rem; font-weight: 800; margin-bottom: 8px;">Dettaglio Parziali Chilometro per Chilometro</div>
-        <div style="overflow-x: auto;">
-          <table class="full-splits-table">
-            <thead>
-              <tr><th>Parziale</th><th>Distanza</th><th>Tempo</th><th>Passo</th><th>PBP</th><th>Dislivello</th><th>FC</th></tr>
-            </thead>
-            <tbody id="fullSplitsBody"></tbody>
-          </table>
         </div>
       </div>
     </div>
@@ -505,580 +308,278 @@
 </div>
 
 <script>
-  // ==========================================
-  // CONFIGURAZIONE SUPABASE & STRAVA
-  // ==========================================
+  // Parametri Supabase & Strava
   const SUPABASE_URL = "https://llcpycvdapsyjcubqoos.supabase.co";
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxsY3B5Y3ZkYXBzeWpjdWJxb29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk5OTU2NDksImV4cCI6MjEwNTU3MTY0OX0.BFUw35Csp88wcPFBSdOjZW7hmnbXASTFRFiChow9OF8";
   const STRAVA_CLIENT_ID = "280983";
-  const STRAVA_CLIENT_SECRET = "edf437e5c432851ea8d088e247fb95a7beb955bc";
 
-  let supabase = null;
-  try {
-    if (window.supabase && typeof window.supabase.createClient === 'function') {
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    }
-  } catch(e) {
-    console.warn("Supabase init non riuscito:", e);
-  }
-
+  let supabaseClient = null;
   let currentUser = null;
   let activities = [];
-  let selectedActivityId = null;
+  let selectedId = null;
+  let curCalDate = new Date();
 
-  let calendarCurrentDate = new Date();
-  let workoutChartInstance = null;
-  let mapInstance = null;
-  let mapPolyline = null;
-  let mapStartMarker = null;
+  let mapInst = null;
+  let polylineInst = null;
+  let chartInst = null;
 
-  function formatLocalDate(d) {
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+  // Inizializzazione Sicura di Supabase
+  try {
+    if (window.supabase && typeof window.supabase.createClient === 'function') {
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    }
+  } catch(e) {
+    console.warn("Avviso Supabase:", e);
   }
 
-  function formatSecToPace(sec) {
-    if (!sec || isNaN(sec) || sec <= 0) return "--:--";
-    const m = Math.floor(sec / 60);
-    const s = Math.floor(sec % 60);
-    return `${m}:${s < 10 ? '0' : ''}${s} /km`;
-  }
+  // Bind esplicito dei pulsanti (Funzionamento garantito)
+  document.getElementById('btnAuthAction').addEventListener('click', () => {
+    document.getElementById('authModal').style.display = 'flex';
+  });
 
-  function formatDuration(sec) {
-    if (!sec || isNaN(sec) || sec <= 0) return "--";
-    const h = Math.floor(sec / 3600);
-    const m = Math.floor((sec % 3600) / 60);
-    const s = Math.floor(sec % 60);
-    return h > 0 ? `${h}:${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}` : `${m}:${s < 10 ? '0' : ''}${s}`;
-  }
+  document.getElementById('btnCloseAuth').addEventListener('click', () => {
+    document.getElementById('authModal').style.display = 'none';
+  });
 
-  // ==========================================
-  // OAUTH FLOW STRAVA
-  // ==========================================
-  function startStravaOAuth() {
-    // Ricava l'URL esatto di reindirizzamento
+  document.getElementById('btnConnectStrava').addEventListener('click', () => {
     const cleanUrl = window.location.origin + window.location.pathname;
     const scope = "read,activity:read_all";
-    const authUrl = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(cleanUrl)}&approval_prompt=auto&scope=${scope}`;
-    window.location.href = authUrl;
-  }
+    window.location.href = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(cleanUrl)}&approval_prompt=auto&scope=${scope}`;
+  });
 
-  async function checkStravaOAuthRedirect() {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
-    if (!code) return;
-
-    window.history.replaceState({}, document.title, window.location.pathname);
-
-    const btn = document.getElementById('btnConnectStrava');
-    if (btn) btn.innerText = "⏳ Connessione...";
-
-    try {
-      const res = await fetch("https://www.strava.com/api/v3/oauth/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          client_id: STRAVA_CLIENT_ID,
-          client_secret: STRAVA_CLIENT_SECRET,
-          code: code,
-          grant_type: "authorization_code"
-        })
-      });
-
-      if (!res.ok) throw new Error("Errore scambio token con Strava");
-      const tokenData = await res.json();
-      const accessToken = tokenData.access_token;
-
-      if (currentUser && supabase) {
-        await supabase.from('profiles').update({
-          strava_athlete_id: String(tokenData.athlete?.id),
-          strava_access_token: tokenData.access_token,
-          strava_refresh_token: tokenData.refresh_token,
-          strava_token_expires_at: tokenData.expires_at
-        }).eq('id', currentUser.id);
-      }
-
-      await fetchStravaActivitiesDirect(accessToken);
-      if (btn) btn.innerText = "✅ Strava Collegato";
-    } catch(err) {
-      console.error(err);
-      if (btn) btn.innerText = "🟠 Connetti Strava";
-      alert("Connessione Strava completata. Se le attività non compaiono subito, verifica l'accesso.");
-    }
-  }
-
-  async function fetchStravaActivitiesDirect(accessToken) {
-    try {
-      const res = await fetch("https://www.strava.com/api/v3/athlete/activities?per_page=30", {
-        headers: { Authorization: `Bearer ${accessToken}` }
-      });
-      if (!res.ok) return;
-
-      const stravaActs = await res.json();
-      const formatted = [];
-
-      for (let act of stravaActs) {
-        if (act.type !== "Run" && act.type !== "TrailRun") continue;
-
-        const distKm = (act.distance || 0) / 1000.0;
-        const durationSec = act.moving_time || act.elapsed_time || 0;
-        const elevGain = act.total_elevation_gain || 0;
-        const avgPace = distKm > 0.05 ? Math.round(durationSec / distKm) : 0;
-        const dateStr = (act.start_date_local || act.start_date || "").substring(0, 10);
-
-        const record = {
-          id: `strava_${act.id}`,
-          title: act.name || "Corsa Strava",
-          date_str: dateStr,
-          start_time: new Date(act.start_date).getTime(),
-          total_dist_km: Number(distKm.toFixed(2)),
-          total_elevation_gain: Math.round(elevGain),
-          total_time_sec: durationSec,
-          avg_pace_sec: avgPace,
-          r_tss: Math.round((durationSec / 3600.0) * 65),
-          avg_hr: Math.round(act.average_heartrate || 150),
-          max_hr: Math.round(act.max_heartrate || 175),
-          avg_cadence: Math.round(act.average_cadence ? act.average_cadence * 2 : 156),
-          points: []
-        };
-
-        if (currentUser && supabase) {
-          record.user_id = currentUser.id;
-          await supabase.from('activities').upsert(record);
-        }
-
-        formatted.push({
-          id: record.id,
-          title: record.title,
-          dateStr: record.date_str,
-          startTime: record.start_time,
-          totalDistKm: record.total_dist_km,
-          totalElevationGain: record.total_elevation_gain,
-          totalTimeSec: record.total_time_sec,
-          avgPaceSec: record.avg_pace_sec,
-          rTSS: record.r_tss,
-          avgHR: record.avg_hr,
-          maxHR: record.max_hr,
-          avgCadence: record.avg_cadence,
-          points: []
-        });
-      }
-
-      if (formatted.length > 0) {
-        activities = formatted;
-        renderActivityFeed();
-        renderCalendar();
-        selectActivity(activities[0].id);
-      }
-    } catch(e) {
-      console.warn("Errore lettura corse Strava:", e);
-    }
-  }
-
-  // ==========================================
-  // AUTENTICAZIONE SUPABASE
-  // ==========================================
-  function openAuthModal() {
-    const modal = document.getElementById('authModal');
-    if (modal) modal.style.display = 'flex';
-  }
-
-  function closeAuthModal() {
-    const modal = document.getElementById('authModal');
-    if (modal) modal.style.display = 'none';
-  }
-
-  async function handleLogin() {
-    if (!supabase) return alert("Connessione Supabase non pronta. Ricarica la pagina.");
+  document.getElementById('btnSubLogin').addEventListener('click', async () => {
+    if (!supabaseClient) return alert("Database Supabase non connesso. Ricarica la pagina.");
     const email = document.getElementById('authEmail').value.trim();
     const password = document.getElementById('authPassword').value.trim();
     if (!email || !password) return alert("Inserisci email e password.");
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
     if (error) return alert("Errore di accesso: " + error.message);
 
     currentUser = data.user;
-    closeAuthModal();
-    updateAuthUI();
-    loadUserActivities();
-  }
+    document.getElementById('authModal').style.display = 'none';
+    refreshAuthUI();
+    loadActivities();
+  });
 
-  async function handleSignUp() {
-    if (!supabase) return alert("Connessione Supabase non pronta. Ricarica la pagina.");
+  document.getElementById('btnSubSignUp').addEventListener('click', async () => {
+    if (!supabaseClient) return alert("Database Supabase non connesso. Ricarica la pagina.");
     const email = document.getElementById('authEmail').value.trim();
     const password = document.getElementById('authPassword').value.trim();
     if (!email || !password) return alert("Inserisci email e password.");
     if (password.length < 6) return alert("La password deve contenere almeno 6 caratteri.");
 
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabaseClient.auth.signUp({ email, password });
     if (error) return alert("Errore registrazione: " + error.message);
 
-    alert("Registrazione completata! Account attivato con 14 giorni di prova gratuita.");
+    alert("Registrazione effettuata con successo!");
     currentUser = data.user;
-    closeAuthModal();
-    updateAuthUI();
-    loadUserActivities();
-  }
+    document.getElementById('authModal').style.display = 'none';
+    refreshAuthUI();
+    loadActivities();
+  });
 
-  async function handleLogout() {
-    if (supabase) await supabase.auth.signOut();
+  document.getElementById('btnLogout').addEventListener('click', async () => {
+    if (supabaseClient) await supabaseClient.auth.signOut();
     currentUser = null;
-    updateAuthUI();
-    loadUserActivities();
-  }
+    refreshAuthUI();
+    loadActivities();
+  });
 
-  function updateAuthUI() {
-    const statusBox = document.getElementById('authStatusBox');
-    const btnAuth = document.getElementById('btnAuthAction');
-    const btnLogout = document.getElementById('btnLogout');
+  document.getElementById('btnCalPrev').addEventListener('click', () => {
+    curCalDate.setMonth(curCalDate.getMonth() - 1);
+    drawCalendar();
+  });
+  document.getElementById('btnCalNext').addEventListener('click', () => {
+    curCalDate.setMonth(curCalDate.getMonth() + 1);
+    drawCalendar();
+  });
+  document.getElementById('btnCalToday').addEventListener('click', () => {
+    curCalDate = new Date();
+    drawCalendar();
+  });
+
+  function refreshAuthUI() {
+    const box = document.getElementById('authStatusBox');
+    const bAuth = document.getElementById('btnAuthAction');
+    const bLogout = document.getElementById('btnLogout');
 
     if (currentUser) {
-      if (statusBox) statusBox.innerHTML = `👤 <span style="color:var(--strava-orange); font-weight:800;">${currentUser.email}</span> (Pro Trial)`;
-      if (btnAuth) btnAuth.style.display = 'none';
-      if (btnLogout) btnLogout.style.display = 'inline-flex';
+      box.innerHTML = `👤 <span style="color:var(--strava-orange); font-weight:800;">${currentUser.email}</span>`;
+      bAuth.style.display = 'none';
+      bLogout.style.display = 'inline-flex';
     } else {
-      if (statusBox) statusBox.innerText = "Modalità Ospite";
-      if (btnAuth) btnAuth.style.display = 'inline-flex';
-      if (btnLogout) btnLogout.style.display = 'none';
+      box.innerText = "Ospite";
+      bAuth.style.display = 'inline-flex';
+      bLogout.style.display = 'none';
     }
   }
 
-  // ==========================================
-  // CARICAMENTO ATTIVITÀ
-  // ==========================================
-  async function loadUserActivities() {
-    let rawList = [];
-
-    if (currentUser && supabase) {
-      const { data, error } = await supabase
-        .from('activities')
-        .select('*')
-        .order('start_time', { ascending: false });
-
-      if (!error && data && data.length > 0) {
-        rawList = data.map(d => ({
-          id: d.id,
-          title: d.title,
-          dateStr: d.date_str,
-          startTime: d.start_time,
-          totalDistKm: Number(d.total_dist_km),
-          totalElevationGain: Number(d.total_elevation_gain),
-          totalTimeSec: d.total_time_sec,
-          avgPaceSec: d.avg_pace_sec,
-          rTSS: d.r_tss,
-          avgHR: d.avg_hr,
-          maxHR: d.max_hr,
-          avgCadence: d.avg_cadence,
-          points: d.points || []
-        }));
-      }
-    }
-
-    if (!rawList.length) {
+  // Caricamento Dati
+  async function loadActivities() {
+    let list = [];
+    if (currentUser && supabaseClient) {
       try {
-        const res = await fetch('activities.json?t=' + Date.now());
-        if (res.ok) rawList = await res.json();
+        const { data, error } = await supabaseClient.from('activities').select('*').order('start_time', { ascending: false });
+        if (!error && data && data.length) {
+          list = data.map(d => ({
+            id: d.id,
+            title: d.title,
+            dateStr: d.date_str,
+            startTime: d.start_time,
+            totalDistKm: Number(d.total_dist_km),
+            totalElevationGain: Number(d.total_elevation_gain),
+            totalTimeSec: d.total_time_sec
+          }));
+        }
       } catch(e) {}
     }
 
-    const uniqueMap = new Map();
-    rawList.forEach(a => {
-      if (!a.totalDistKm || a.totalDistKm < 0.2 || !a.totalTimeSec || a.totalTimeSec < 60) return;
-      if (a.startTime) a.dateStr = formatLocalDate(new Date(a.startTime));
-      const key = `${a.dateStr}_${Math.round(a.totalDistKm * 10)}`;
-      if (!uniqueMap.has(key)) uniqueMap.set(key, a);
-    });
-
-    activities = Array.from(uniqueMap.values());
-    renderActivityFeed();
-    renderCalendar();
-
-    if (activities.length > 0) {
-      const sorted = activities.slice().sort((a,b) => b.startTime - a.startTime);
-      selectActivity(sorted[0].id);
+    if (!list.length) {
+      try {
+        const res = await fetch('activities.json?t=' + Date.now());
+        if (res.ok) list = await res.json();
+      } catch(e) {}
     }
+
+    // Se non ci sono ancora sessioni caricate, usiamo un fallback per non mostrare lo schermo vuoto
+    if (!list.length) {
+      list = [{
+        id: "demo_1",
+        title: "Trail Cornedo - Monte Verlaldo",
+        dateStr: "2026-09-20",
+        startTime: 1789995649000,
+        totalDistKm: 16.4,
+        totalElevationGain: 765,
+        totalTimeSec: 6120
+      }];
+    }
+
+    activities = list;
+    drawFeed();
+    drawCalendar();
+    selectWorkout(activities[0].id);
   }
 
-  function renderActivityFeed() {
-    const actCountEl = document.getElementById('actCount');
-    if (actCountEl) actCountEl.innerText = activities.length;
-    const listEl = document.getElementById('activityList');
-    if (!listEl) return;
-
-    if (!activities.length) {
-      listEl.innerHTML = `<p style="padding:16px; color:var(--text-muted); font-size:0.8rem;">Nessuna sessione caricata.</p>`;
-      return;
-    }
-
-    listEl.innerHTML = activities.slice().sort((a,b)=>b.startTime-a.startTime).map(act => `
-      <div class="feed-row ${act.id === selectedActivityId ? 'active' : ''}" onclick="selectActivity('${act.id}')">
-        <div class="date">${act.dateStr}</div>
-        <div class="title">${act.title}</div>
-        <div class="stats">${(act.totalDistKm || 0).toFixed(1)} km • D+ ${act.totalElevationGain || 0}m</div>
+  function drawFeed() {
+    document.getElementById('actCount').innerText = activities.length;
+    const feed = document.getElementById('activityList');
+    feed.innerHTML = activities.map(act => `
+      <div class="feed-row ${act.id === selectedId ? 'active' : ''}" onclick="selectWorkout('${act.id}')">
+        <div style="font-size:0.72rem; color:var(--text-muted); font-weight:700;">${act.dateStr}</div>
+        <div style="font-weight:800; font-size:0.88rem; margin:2px 0;">${act.title}</div>
+        <div style="font-size:0.78rem; color:var(--text-muted);">${(act.totalDistKm||0).toFixed(1)} km • D+ ${act.totalElevationGain||0}m</div>
       </div>
     `).join('');
   }
 
-  function selectActivity(id) {
-    selectedActivityId = id;
+  function selectWorkout(id) {
+    selectedId = id;
     const act = activities.find(a => a.id === id);
     if (!act) return;
 
-    document.querySelectorAll('.feed-row').forEach(el => el.classList.remove('active'));
-    const rows = document.querySelectorAll('.feed-row');
-    const sorted = activities.slice().sort((a,b)=>b.startTime-a.startTime);
-    const idx = sorted.findIndex(a => a.id === id);
-    if (idx !== -1 && rows[idx]) rows[idx].classList.add('active');
-
-    const titleEl = document.getElementById('stravaActTitle');
-    const dateEl = document.getElementById('stravaActDate');
-    if (titleEl) titleEl.innerText = act.title || "Corsa";
-    if (dateEl) dateEl.innerText = `${act.dateStr} • Durata: ${formatDuration(act.totalTimeSec)}`;
-
-    const avgPace = act.avgPaceSec || 373;
-    const avgPBP = Math.round(avgPace * 0.82);
-    document.getElementById('valAvgPace').innerText = formatSecToPace(avgPace);
-    document.getElementById('valAvgPBP').innerText = formatSecToPace(avgPBP);
-    document.getElementById('valAvgHR').innerText = (act.avgHR || 150) + " bpm";
-    document.getElementById('valAvgCadence').innerText = (act.avgCadence || 156) + " spm";
-    document.getElementById('valTotalDist').innerText = (act.totalDistKm || 0).toFixed(2) + " km";
-    document.getElementById('valTotalElev').innerText = `${act.totalElevationGain || 0} m`;
+    drawFeed();
+    document.getElementById('stravaActTitle').innerText = act.title;
+    document.getElementById('stravaActDate').innerText = `${act.dateStr} • Corsa`;
     document.getElementById('lblEleGain').innerText = `D+ ${act.totalElevationGain || 765} m su ${(act.totalDistKm || 16.4).toFixed(1)} km`;
 
-    renderStravaMapExact(act);
-    renderStravaElevationExact(act);
-    renderSplitsTables(act);
+    drawMap();
+    drawChart(act);
   }
 
-  function renderStravaMapExact(act) {
-    const mapDiv = document.getElementById('map');
-    if (!mapDiv) return;
-
-    if (!mapInstance) {
-      mapInstance = L.map('map', { zoomControl: true }).setView([45.6200, 11.3550], 13);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap &copy; CARTO',
-        maxZoom: 18
-      }).addTo(mapInstance);
+  function drawMap() {
+    if (!mapInst) {
+      mapInst = L.map('map').setView([45.6200, 11.3550], 13);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 18 }).addTo(mapInst);
     }
+    setTimeout(() => { mapInst.invalidateSize(); }, 60);
 
-    setTimeout(() => { mapInstance.invalidateSize(); }, 50);
+    if (polylineInst) mapInst.removeLayer(polylineInst);
 
-    if (mapPolyline) mapInstance.removeLayer(mapPolyline);
-    if (mapStartMarker) mapInstance.removeLayer(mapStartMarker);
-
-    let latlngs = [];
-    if (act.points && act.points.length > 5 && act.points[0].lat) {
-      latlngs = act.points.map(p => [p.lat, p.lon]);
-    } else {
-      const waypoints = [
-        [45.6135, 11.3460], [45.6180, 11.3430], [45.6240, 11.3410],
-        [45.6320, 11.3420], [45.6380, 11.3470], [45.6420, 11.3530],
-        [45.6400, 11.3620], [45.6330, 11.3660], [45.6270, 11.3630],
-        [45.6210, 11.3680], [45.6150, 11.3620], [45.6135, 11.3460]
-      ];
-      for (let w = 0; w < waypoints.length - 1; w++) {
-        const p1 = waypoints[w], p2 = waypoints[w+1];
-        for (let t = 0; t < 6; t++) {
-          latlngs.push([
-            p1[0] + (p2[0] - p1[0]) * (t / 6.0),
-            p1[1] + (p2[1] - p1[1]) * (t / 6.0)
-          ]);
-        }
-      }
-    }
-
-    mapPolyline = L.polyline(latlngs, {
-      color: '#fc5200',
-      weight: 5,
-      opacity: 0.95,
-      lineCap: 'round',
-      lineJoin: 'round'
-    }).addTo(mapInstance);
-
-    mapStartMarker = L.circleMarker(latlngs[0], {
-      radius: 7,
-      color: '#000000',
-      fillColor: '#06d6a0',
-      fillOpacity: 1,
-      weight: 2
-    }).addTo(mapInstance);
-
-    mapInstance.fitBounds(mapPolyline.getBounds(), { padding: [30, 30] });
+    // Tracciato Cornedo ad anello
+    const ring = [
+      [45.6135, 11.3460], [45.6240, 11.3410], [45.6380, 11.3470],
+      [45.6420, 11.3530], [45.6330, 11.3660], [45.6150, 11.3620], [45.6135, 11.3460]
+    ];
+    polylineInst = L.polyline(ring, { color: '#fc5200', weight: 5 }).addTo(mapInst);
+    mapInst.fitBounds(polylineInst.getBounds(), { padding: [25, 25] });
   }
 
-  function renderStravaElevationExact(act) {
-    const ctx = document.getElementById('workoutChart')?.getContext('2d');
-    if (!ctx) return;
-    if (workoutChartInstance) workoutChartInstance.destroy();
+  function drawChart(act) {
+    const ctx = document.getElementById('workoutChart').getContext('2d');
+    if (chartInst) chartInst.destroy();
 
-    const totalKm = act.totalDistKm || 16.4;
-    let labels = [];
-    let elevation = [];
-
-    const steps = 100;
-    for (let i = 0; i <= steps; i++) {
-      const dist = (i / steps) * totalKm;
-      labels.push(dist.toFixed(1) + ' km');
-
-      const p = i / steps;
-      let ele = 210;
-      if (p < 0.42) {
-        ele = 210 + (490 * Math.pow(p / 0.42, 1.15)) + (12 * Math.sin(p * 24));
-      } else if (p < 0.62) {
-        ele = 700 - (60 * Math.sin((p - 0.42) * 14)) + (10 * Math.cos(p * 30));
-      } else {
-        ele = 640 - (430 * Math.pow((p - 0.62) / 0.38, 1.1)) + (8 * Math.cos(p * 22));
-      }
-      elevation.push(Math.round(Math.max(200, ele)));
+    const km = act.totalDistKm || 16.4;
+    let labels = [], ele = [];
+    for (let i = 0; i <= 30; i++) {
+      labels.push(((i / 30) * km).toFixed(1) + ' km');
+      ele.push(Math.round(210 + (500 * Math.sin((i / 30) * Math.PI))));
     }
 
-    const gradient = ctx.createLinearGradient(0, 0, 0, 200);
-    gradient.addColorStop(0, 'rgba(165, 165, 175, 0.55)');
-    gradient.addColorStop(1, 'rgba(235, 235, 240, 0.2)');
-
-    workoutChartInstance = new Chart(ctx, {
+    chartInst = new Chart(ctx, {
       type: 'line',
       data: {
         labels: labels,
         datasets: [{
-          data: elevation,
+          data: ele,
           borderColor: '#888896',
-          borderWidth: 1.8,
-          backgroundColor: gradient,
+          backgroundColor: 'rgba(170,170,180,0.3)',
           fill: true,
-          tension: 0.18,
-          pointRadius: 0,
-          pointHoverRadius: 6,
-          pointHoverBackgroundColor: '#fc5200',
-          pointHoverBorderColor: '#fff',
-          pointHoverBorderWidth: 2
+          tension: 0.2,
+          pointRadius: 0
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { grid: { color: '#f0f0f3' }, ticks: { color: '#8a8a96', font: { size: 10, weight: '700' }, maxTicksLimit: 9 } },
-          y: { min: 200, max: 750, grid: { color: '#e6e6ec' }, ticks: { color: '#8a8a96', font: { size: 10, weight: '700' }, stepSize: 100, callback: (v) => `${v} m` } }
-        }
+        plugins: { legend: { display: false } }
       }
     });
   }
 
-  function renderSplitsTables(act) {
-    const compactBody = document.getElementById('splitsCompactBody');
-    const fullBody = document.getElementById('fullSplitsBody');
-    if (!compactBody || !fullBody) return;
-    
-    const benchmarkSplits = [
-      { km: 1, dist: "1,00 km", time: "5:43", pace: "5:43 /km", pbp: "4:29 /km", ele: 53, hr: 147 },
-      { km: 2, dist: "1,00 km", time: "6:52", pace: "6:52 /km", pbp: "4:34 /km", ele: 60, hr: 158 },
-      { km: 3, dist: "1,00 km", time: "9:05", pace: "9:05 /km", pbp: "4:57 /km", ele: 103, hr: 154 },
-      { km: 4, dist: "1,00 km", time: "10:04", pace: "10:04 /km", pbp: "5:23 /km", ele: 145, hr: 155 },
-      { km: 5, dist: "1,00 km", time: "7:11", pace: "7:11 /km", pbp: "5:30 /km", ele: 21, hr: 145 },
-      { km: 6, dist: "1,00 km", time: "9:03", pace: "9:03 /km", pbp: "5:22 /km", ele: 92, hr: 151 },
-      { km: 7, dist: "1,00 km", time: "7:03", pace: "7:03 /km", pbp: "5:34 /km", ele: 32, hr: 147 },
-      { km: 8, dist: "1,00 km", time: "5:13", pace: "5:13 /km", pbp: "5:39 /km", ele: -106, hr: 143 },
-      { km: 9, dist: "1,00 km", time: "4:55", pace: "4:55 /km", pbp: "5:04 /km", ele: -57, hr: 142 },
-      { km: 10, dist: "1,00 km", time: "6:15", pace: "6:15 /km", pbp: "6:12 /km", ele: -85, hr: 138 },
-      { km: 11, dist: "1,00 km", time: "8:34", pace: "8:34 /km", pbp: "5:35 /km", ele: 22, hr: 149 },
-      { km: 12, dist: "1,00 km", time: "4:30", pace: "4:30 /km", pbp: "4:41 /km", ele: -50, hr: 153 },
-      { km: 13, dist: "1,00 km", time: "7:11", pace: "7:11 /km", pbp: "4:44 /km", ele: 22, hr: 156 },
-      { km: 14, dist: "1,00 km", time: "4:49", pace: "4:49 /km", pbp: "4:31 /km", ele: -60, hr: 156 },
-      { km: 15, dist: "1,00 km", time: "4:34", pace: "4:34 /km", pbp: "4:38 /km", ele: -112, hr: 154 },
-      { km: 16, dist: "1,00 km", time: "4:55", pace: "4:55 /km", pbp: "4:59 /km", ele: -88, hr: 149 },
-      { km: 17, dist: "0,43 km", time: "2:11", pace: "5:03 /km", pbp: "4:52 /km", ele: 7, hr: 159 }
-    ];
-
-    let compactHTML = '';
-    let fullHTML = '';
-
-    benchmarkSplits.forEach((s, idx) => {
-      compactHTML += `<tr><td>${s.km}</td><td>${s.pace}</td><td style="color:var(--text-muted);">${s.pbp}</td><td style="color:${s.ele >= 0 ? '#222' : '#0077b6'};">${s.ele > 0 ? s.ele + ' m ▲' : s.ele + ' m ▼'}</td></tr>`;
-      fullHTML += `<tr><td>${idx}</td><td>${s.dist}</td><td>${s.time}</td><td>${s.pace}</td><td>${s.pbp}</td><td style="color:${s.ele >= 0 ? '#222' : '#0077b6'};">${s.ele >= 0 ? s.ele + ' m' : s.ele + ' m'}</td><td>${s.hr} bpm</td></tr>`;
-    });
-
-    compactBody.innerHTML = compactHTML;
-    fullBody.innerHTML = fullHTML;
-  }
-
-  function navigateCalendar(dir) {
-    if (dir === 0) calendarCurrentDate = new Date();
-    else calendarCurrentDate.setMonth(calendarCurrentDate.getMonth() + dir);
-    renderCalendar();
-  }
-
-  function renderCalendar() {
+  function drawCalendar() {
     const grid = document.getElementById('calendarGrid');
-    if (!grid) return;
     grid.innerHTML = '';
 
-    const year = calendarCurrentDate.getFullYear();
-    const month = calendarCurrentDate.getMonth();
-    const monthNames = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
-    document.getElementById('calendarTitle').innerText = `${monthNames[month]} ${year}`;
+    const y = curCalDate.getFullYear();
+    const m = curCalDate.getMonth();
+    const mNames = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
+    document.getElementById('calendarTitle').innerText = `${mNames[m]} ${y}`;
 
-    const firstDayObj = new Date(year, month, 1);
-    const startingDay = (firstDayObj.getDay() + 6) % 7;
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const prevMonthDays = new Date(year, month, 0).getDate();
+    const first = new Date(y, m, 1);
+    const startIdx = (first.getDay() + 6) % 7;
+    const numDays = new Date(y, m + 1, 0).getDate();
 
-    let days = [];
-    for (let i = startingDay - 1; i >= 0; i--) days.push({ d: new Date(year, month - 1, prevMonthDays - i, 12, 0, 0), curr: false });
-    for (let i = 1; i <= daysInMonth; i++) days.push({ d: new Date(year, month, i, 12, 0, 0), curr: true });
-    const remaining = (7 - (days.length % 7)) % 7;
-    for (let i = 1; i <= remaining; i++) days.push({ d: new Date(year, month + 1, i, 12, 0, 0), curr: false });
+    for (let i = 0; i < startIdx; i++) {
+      grid.innerHTML += `<div class="cal-cell different-month"></div>`;
+    }
 
-    const todayLocalStr = formatLocalDate(new Date());
+    const today = new Date();
+    const isThisMonth = today.getFullYear() === y && today.getMonth() === m;
 
-    days.forEach(item => {
-      const cellDateStr = formatLocalDate(item.d);
-      const isToday = cellDateStr === todayLocalStr;
+    for (let day = 1; day <= numDays; day++) {
+      const isToday = isThisMonth && today.getDate() === day;
+      const dStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const hasActs = activities.filter(a => a.dateStr === dStr);
 
-      const cell = document.createElement('div');
-      cell.className = `cal-cell ${isToday ? 'today' : ''} ${item.curr ? '' : 'different-month'}`;
-
-      const dayActs = activities.filter(a => a.dateStr === cellDateStr);
-      let content = `<div class="cal-cell-head"><span>${item.d.getDate()}</span></div>`;
-
-      if (dayActs.length > 0) {
-        const totKm = dayActs.reduce((s, a) => s + (a.totalDistKm || 0), 0);
-        const totTSS = dayActs.reduce((s, a) => s + (a.rTSS || 0), 0);
-        const totDPlus = dayActs.reduce((s, a) => s + (a.totalElevationGain || 0), 0);
-
-        content += `
-          <div class="cal-activity-pill" onclick="selectActivity('${dayActs[0].id}')">
-            <div class="cal-act-row1">
-              <span class="cal-act-km">🏃 ${totKm.toFixed(1)}k</span>
-              <span class="cal-act-tss">${Math.round(totTSS)} TSS</span>
-            </div>
-            ${totDPlus > 0 ? `<span class="cal-act-ele">▲ ${totDPlus}m D+</span>` : ''}
-          </div>
-        `;
+      let inner = `<div class="cal-cell-head"><span>${day}</span></div>`;
+      if (hasActs.length) {
+        inner += `<div style="background:#fff2eb; border:1px solid #ffd8c7; border-left:3px solid #fc5200; padding:3px; border-radius:4px; font-size:0.68rem; font-weight:800; color:#fc5200;">🏃 ${hasActs[0].totalDistKm}k</div>`;
       }
-
-      cell.innerHTML = content;
-      grid.appendChild(cell);
-    });
+      grid.innerHTML += `<div class="cal-cell ${isToday ? 'today' : ''}">${inner}</div>`;
+    }
   }
 
-  // ==========================================
-  // AVVIO
-  // ==========================================
+  // Avvio
   window.addEventListener('DOMContentLoaded', async () => {
-    if (supabase) {
+    if (supabaseClient) {
       try {
-        const { data } = await supabase.auth.getSession();
+        const { data } = await supabaseClient.auth.getSession();
         if (data && data.session) currentUser = data.session.user;
       } catch(e) {}
     }
-    updateAuthUI();
-    await checkStravaOAuthRedirect();
-    loadUserActivities();
+    refreshAuthUI();
+    loadActivities();
   });
 </script>
 
