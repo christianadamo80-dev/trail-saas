@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Strava & Trail Analytics Studio - Cloud SaaS</title>
+  <title>Trail Analytics Studio - Zero-Click Hub</title>
   
   <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -225,7 +225,7 @@
     .feed-row .title { font-size: 0.86rem; font-weight: 800; color: #111; margin: 2px 0; }
     .feed-row .stats { font-size: 0.76rem; color: var(--text-muted); }
 
-    /* Scheda Attività Strava */
+    /* Scheda Attività */
     .strava-activity-view {
       background: var(--card-bg);
       border: 1px solid var(--border-color);
@@ -366,12 +366,15 @@
       </div>
     </div>
 
-    <div style="display: flex; gap: 10px; align-items: center;">
-      <!-- Stato Autenticazione Supabase -->
+    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
       <div id="authStatusBox" style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);">
         Ospite
       </div>
-      <button class="btn-strava primary" id="btnAuthAction" onclick="openAuthModal()">👤 Accedi</button>
+      <!-- Tasto di Connessione Strava Zero-Click -->
+      <button class="btn-strava primary" id="btnConnectStrava" onclick="startStravaOAuth()">
+        🟠 Connetti Strava
+      </button>
+      <button class="btn-strava" id="btnAuthAction" onclick="openAuthModal()">👤 Accedi</button>
       <button class="btn-strava" id="btnLogout" style="display: none;" onclick="handleLogout()">Esci</button>
     </div>
   </header>
@@ -393,7 +396,7 @@
     </div>
   </div>
 
-  <!-- CALENDARIO ORDINATO E LOCALE -->
+  <!-- CALENDARIO ORDINATO -->
   <div class="calendar-card">
     <div class="calendar-toolbar">
       <div style="display: flex; gap: 8px; align-items: center;">
@@ -402,7 +405,7 @@
         <button class="btn-strava" onclick="navigateCalendar(1)">Succ. ▶</button>
         <span id="calendarTitle" style="font-size: 1rem; font-weight: 800; margin-left: 8px;">Calendario</span>
       </div>
-      <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);" id="cloudSyncStatus">⚡ Cloud Connesso</span>
+      <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted);" id="cloudSyncStatus">⚡ Sync Hub Attivo</span>
     </div>
     <div class="calendar-grid-header">
       <div>LUN</div><div>MAR</div><div>MER</div><div>GIO</div><div>VEN</div><div>SAB</div><div>DOM</div>
@@ -410,7 +413,7 @@
     <div class="calendar-grid" id="calendarGrid"></div>
   </div>
 
-  <!-- Layout Principale: Logbook + Strava Detail -->
+  <!-- Layout Principale -->
   <div class="main-grid">
     <div class="feed-card">
       <div class="feed-header">
@@ -497,11 +500,13 @@
 
 <script>
   // ==========================================
-  // CONFIGURAZIONE SUPABASE CLIENT DIRETTA
+  // CONFIGURAZIONE SUPABASE & STRAVA
   // ==========================================
   const SUPABASE_URL = "https://llcpycvdapsyjcubqoos.supabase.co";
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxsY3B5Y3ZkYXBzeWpjdWJxb29zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk5OTU2NDksImV4cCI6MjEwNTU3MTY0OX0.BFUw35Csp88wcPFBSdOjZW7hmnbXASTFRFiChow9OF8";
-  
+  const STRAVA_CLIENT_ID = "280983";
+  const STRAVA_CLIENT_SECRET = "edf437e5c432851ea8d088e247fb95a7beb955bc";
+
   const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
   let currentUser = null;
@@ -537,7 +542,129 @@
   }
 
   // ==========================================
-  // AUTENTICAZIONE UTENTE (SUPABASE)
+  // OAUTH FLOW STRAVA ZERO-CLICK
+  // ==========================================
+  function startStravaOAuth() {
+    const redirectUri = window.location.origin + window.location.pathname;
+    const scope = "read,activity:read_all";
+    const authUrl = `https://www.strava.com/oauth/authorize?client_id=${STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&approval_prompt=auto&scope=${scope}`;
+    window.location.href = authUrl;
+  }
+
+  async function checkStravaOAuthRedirect() {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    if (!code) return;
+
+    // Pulisce l'URL per estetica
+    window.history.replaceState({}, document.title, window.location.pathname);
+
+    const btn = document.getElementById('btnConnectStrava');
+    if (btn) btn.innerText = "⏳ Sincronizzazione...";
+
+    try {
+      // Scambio codice autorizzazione con Access Token
+      const res = await fetch("https://www.strava.com/oauth/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          client_id: STRAVA_CLIENT_ID,
+          client_secret: STRAVA_CLIENT_SECRET,
+          code: code,
+          grant_type: "authorization_code"
+        })
+      });
+
+      if (!res.ok) throw new Error("Scambio token fallito");
+      const tokenData = await res.json();
+      const accessToken = tokenData.access_token;
+
+      // Se l'utente è autenticato in Supabase, salva i token nel suo profilo
+      if (currentUser && supabase) {
+        await supabase.from('profiles').update({
+          strava_athlete_id: String(tokenData.athlete?.id),
+          strava_access_token: tokenData.access_token,
+          strava_refresh_token: tokenData.refresh_token,
+          strava_token_expires_at: tokenData.expires_at
+        }).eq('id', currentUser.id);
+      }
+
+      // Scarica subito le ultime attività direttamente dalle API Strava
+      await fetchStravaActivitiesDirect(accessToken);
+
+      if (btn) btn.innerText = "✅ Strava Collegato";
+    } catch(err) {
+      console.error(err);
+      if (btn) btn.innerText = "❌ Errore Sync";
+    }
+  }
+
+  async function fetchStravaActivitiesDirect(accessToken) {
+    const res = await fetch("https://www.strava.com/api/v3/athlete/activities?per_page=30", {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    if (!res.ok) return;
+
+    const stravaActs = await res.json();
+    const formatted = [];
+
+    for (let act of stravaActs) {
+      if (act.type !== "Run" && act.type !== "TrailRun") continue;
+
+      const distKm = (act.distance || 0) / 1000.0;
+      const durationSec = act.moving_time || act.elapsed_time || 0;
+      const elevGain = act.total_elevation_gain || 0;
+      const avgPace = distKm > 0.05 ? Math.round(durationSec / distKm) : 0;
+      const dateStr = (act.start_date_local || act.start_date || "").substring(0, 10);
+
+      const record = {
+        id: `strava_${act.id}`,
+        title: act.name || "Corsa Strava",
+        date_str: dateStr,
+        start_time: new Date(act.start_date).getTime(),
+        total_dist_km: Number(distKm.toFixed(2)),
+        total_elevation_gain: Math.round(elevGain),
+        total_time_sec: durationSec,
+        avg_pace_sec: avgPace,
+        r_tss: Math.round((durationSec / 3600.0) * 65),
+        avg_hr: Math.round(act.average_heartrate || 150),
+        max_hr: Math.round(act.max_heartrate || 175),
+        avg_cadence: Math.round(act.average_cadence ? act.average_cadence * 2 : 156),
+        points: []
+      };
+
+      if (currentUser && supabase) {
+        record.user_id = currentUser.id;
+        await supabase.from('activities').upsert(record);
+      }
+
+      formatted.push({
+        id: record.id,
+        title: record.title,
+        dateStr: record.date_str,
+        startTime: record.start_time,
+        totalDistKm: record.total_dist_km,
+        totalElevationGain: record.total_elevation_gain,
+        totalTimeSec: record.total_time_sec,
+        avgPaceSec: record.avg_pace_sec,
+        rTSS: record.r_tss,
+        avgHR: record.avg_hr,
+        maxHR: record.max_hr,
+        avgCadence: record.avg_cadence,
+        points: []
+      });
+    }
+
+    if (formatted.length > 0) {
+      activities = formatted;
+      renderActivityFeed();
+      renderCalendar();
+      selectActivity(activities[0].id);
+    }
+  }
+
+  // ==========================================
+  // AUTENTICAZIONE SUPABASE
   // ==========================================
   function openAuthModal() { document.getElementById('authModal').style.display = 'flex'; }
   function closeAuthModal() { document.getElementById('authModal').style.display = 'none'; }
@@ -564,7 +691,7 @@
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) return alert("Errore registrazione: " + error.message);
 
-    alert("Registrazione effettuata con successo! Account attivato con 14 giorni di prova gratuita.");
+    alert("Registrazione completata! Account configurato.");
     currentUser = data.user;
     closeAuthModal();
     updateAuthUI();
@@ -584,7 +711,7 @@
     const btnLogout = document.getElementById('btnLogout');
 
     if (currentUser) {
-      statusBox.innerHTML = `👤 <span style="color:var(--strava-orange);">${currentUser.email}</span> (Trial Pro)`;
+      statusBox.innerHTML = `👤 <span style="color:var(--strava-orange);">${currentUser.email}</span> (Pro Trial)`;
       btnAuth.style.display = 'none';
       btnLogout.style.display = 'inline-flex';
     } else {
@@ -595,12 +722,11 @@
   }
 
   // ==========================================
-  // CARICAMENTO & DEDUPLICAZIONE ATTIVITÀ
+  // CARICAMENTO ATTIVITÀ
   // ==========================================
   async function loadUserActivities() {
     let rawList = [];
 
-    // 1. Se l'utente è loggato, carica dal suo database Supabase
     if (currentUser && supabase) {
       const { data, error } = await supabase
         .from('activities')
@@ -626,7 +752,6 @@
       }
     }
 
-    // 2. Fallback: se vuoto o non loggato, carica le attività locali (activities.json)
     if (!rawList.length) {
       try {
         const res = await fetch('activities.json?t=' + Date.now());
@@ -634,7 +759,6 @@
       } catch(e) {}
     }
 
-    // Deduplicazione per data e distanza
     const uniqueMap = new Map();
     rawList.forEach(a => {
       if (!a.totalDistKm || a.totalDistKm < 0.2 || !a.totalTimeSec || a.totalTimeSec < 60) return;
@@ -912,7 +1036,7 @@
   }
 
   // ==========================================
-  // AVVIO APPLICAZIONE & SESSIONE ATTIVA
+  // AVVIO & VERIFICA SESSIONE
   // ==========================================
   window.addEventListener('DOMContentLoaded', async () => {
     if (supabase) {
@@ -920,6 +1044,10 @@
       if (data && data.session) currentUser = data.session.user;
     }
     updateAuthUI();
+
+    // Controlla se l'utente sta tornando dal consenso Strava
+    await checkStravaOAuthRedirect();
+
     loadUserActivities();
   });
 </script>
